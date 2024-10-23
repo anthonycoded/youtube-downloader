@@ -1,7 +1,8 @@
-from tkinter import PhotoImage
+from os import truncate
+from tokenize import String
 
-from PIL.ImageOps import expand
-from pytubefix import YouTube
+from pytube import Stream
+from pytubefix import YouTube, StreamQuery
 from customtkinter import *
 from PIL import Image
 import ffmpeg
@@ -18,15 +19,15 @@ app.geometry("500x400")
 img = CTkImage(Image.open("image.png"))
 status = "Ready"
 youtube_url = StringVar()
-download_quality = StringVar()
+download_quality = Stream
 available_streams = []
 radio_buttons = []  # List to hold all the radio buttons
-video_url = youtube_url.get()
+video_url = ""
 
 
-def select_quality(quality: str):
+def select_quality(selected):
     global download_quality
-    download_quality = quality
+    download_quality = selected
 
 def reset():
     global available_streams
@@ -38,6 +39,7 @@ def reset():
         radio.destroy()
 
     radio_buttons.clear()  # Clear the list of radio buttons
+    #button.place(relx=0.5, rely=.85, anchor="center")
     app.update()
 
 
@@ -45,10 +47,11 @@ def get_streams(var_name, index, value_if_allowed):
     try:
         reset()
         global  available_streams
-
+        global video_url
 
         # Get video streams for user to choose from
         yt = YouTube(youtube_url.get())
+        video_url = youtube_url.get()
         video_streams = yt.streams.filter(
             progressive=False,
             file_extension="webm",
@@ -95,30 +98,26 @@ def get_streams(var_name, index, value_if_allowed):
 def download_video():
     try:
         global status
+        global  download_quality
+        global video_url
 
-        if download_quality:
+        if download_quality and video_url:
             status_label.configure(text="Initializing Download", text_color="#0ce889", height=22)
             button.destroy()
             url_entry.delete(0, "end")
             app.update()
 
             yt = YouTube(video_url)
-
-            #Get video stream
-            video_stream = yt.streams.filter(progressive=False, file_extension="webm", adaptive=True,
-                                             only_video=True)
-
-            audio_stream = yt.streams.filter(progressive=False, file_extension="webm", adaptive=True, only_audio=True)[
-                0]
+            audio_stream = yt.streams.filter(progressive=False, file_extension="webm", adaptive=True, only_audio=True)[0]
 
             status_label.configure(text="Downloading video...", text_color="#0ce889", height=22)
             app.update()
-
-            video_file = video_stream.download(output_path=save_path, filename=f"video-{yt.title}webm", )
+            video_file = download_quality.download(output_path=save_path, filename=f"video-{yt.title}webm", )
 
             status_label.configure(text="Downloading audio...", text_color="#0ce889", height=22)
             app.update()
             audio_file = audio_stream.download(output_path=save_path, filename=f"audio-{yt.title}webm")
+
             merge_audio_video(title=yt.title, audio_file=audio_file, video_file=video_file)
         else:
             status_label.configure(text="Please enter a valid url.", text_color="#ed0909", height=22)
@@ -150,7 +149,7 @@ def merge_audio_video(audio_file, video_file, title):
         if result:
             os.remove(audio_file)
             os.remove(video_file)
-            status_label.configure(text=f"Video downloaded successfully {title}", text_color="#0ce889", height=22, width=300)
+            status_label.configure(text=f"Video downloaded successfully {title}", text_color="#0ce889", height=22, width=200,)
             button = CTkButton(app, text="Download Video", command=download_video, corner_radius=25, image=img)
             button.place(relx=0.5, rely=0.5, anchor="center")
             app.update()
