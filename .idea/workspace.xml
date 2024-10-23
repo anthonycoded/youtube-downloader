@@ -4,7 +4,7 @@
     <option name="autoReloadType" value="SELECTIVE" />
   </component>
   <component name="ChangeListManager">
-    <list default="true" id="7027033b-14eb-41ff-b0ea-c089749a9e36" name="Changes" comment="Download selected stream works successfully. TO-DO: Refinements and error handling">
+    <list default="true" id="7027033b-14eb-41ff-b0ea-c089749a9e36" name="Changes" comment="Fixed incorrect quality download. sanitized video title">
       <change beforePath="$PROJECT_DIR$/.idea/workspace.xml" beforeDir="false" afterPath="$PROJECT_DIR$/.idea/workspace.xml" afterDir="false" />
       <change beforePath="$PROJECT_DIR$/main.py" beforeDir="false" afterPath="$PROJECT_DIR$/main.py" afterDir="false" />
     </list>
@@ -48,7 +48,8 @@
     "RunOnceActivity.ShowReadmeOnStart": "true",
     "git-widget-placeholder": "dev",
     "ignore.virus.scanning.warn.message": "true",
-    "last_opened_file_path": "C:/Users/barbe/PycharmProjects/youtube downloader"
+    "last_opened_file_path": "C:/Users/barbe/PycharmProjects/youtube downloader",
+    "settings.editor.selected.configurable": "preferences.lookFeel"
   }
 }]]></component>
   <component name="RecentsManager">
@@ -136,7 +137,15 @@
       <option name="project" value="LOCAL" />
       <updated>1729664338497</updated>
     </task>
-    <option name="localTasksCounter" value="6" />
+    <task id="LOCAL-00006" summary="Fixed incorrect quality download. sanitized video title">
+      <option name="closed" value="true" />
+      <created>1729711595151</created>
+      <option name="number" value="00006" />
+      <option name="presentableId" value="LOCAL-00006" />
+      <option name="project" value="LOCAL" />
+      <updated>1729711595151</updated>
+    </task>
+    <option name="localTasksCounter" value="7" />
     <servers />
   </component>
   <component name="Vcs.Log.Tabs.Properties">
@@ -156,6 +165,7 @@
     <MESSAGE value="added gui with ui messaging" />
     <MESSAGE value="added radio buttons to select quality with updated ui" />
     <MESSAGE value="Download selected stream works successfully. TO-DO: Refinements and error handling" />
-    <option name="LAST_COMMIT_MESSAGE" value="Download selected stream works successfully. TO-DO: Refinements and error handling" />
+    <MESSAGE value="Fixed incorrect quality download. sanitized video title" />
+    <option name="LAST_COMMIT_MESSAGE" value="Fixed incorrect quality download. sanitized video title" />
   </component>
 </project>

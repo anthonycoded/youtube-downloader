@@ -1,9 +1,11 @@
 from pytube import Stream
-from pytubefix import YouTube, StreamQuery
+from pytubefix import YouTube
 from customtkinter import *
 from PIL import Image
 import ffmpeg
 import os
+
+from pytubefix.cli import on_progress
 
 save_path = "C:/Users/barbe/videos"
 test_url = "https://www.youtube.com/watch?v=VTB0_SBltDw"
@@ -22,7 +24,15 @@ radio_buttons = []  # List to hold all the radio buttons
 video_url = ""
 
 #bad_chars_list to sanitize video title/filename
-bad_chars = [';', ':', '!', "*", "?", "."]
+bad_chars = [';', ':', '!', "*", "?", ".", '"', "|"]
+
+# Progress Bars for Video and Audio
+video_progress_bar = None
+audio_progress_bar = None
+
+# Initialize global variables for video and audio progress
+video_bytes_remaining = 0
+audio_bytes_remaining = 0
 
 
 def select_quality(selected):
@@ -42,6 +52,36 @@ def reset():
 
     radio_buttons.clear()  # Clear the list of radio buttons
     app.update()
+
+
+# Calculate percentage progress
+def percent(tem, total):
+    perc = (float(tem) / float(total)) * float(100)
+    return perc
+
+
+# Progress callback function for video and audio
+def video_progress_function(stream, chunk, bytes_remaining):
+    global video_bytes_remaining
+    total_size = stream.filesize
+    bytes_downloaded = total_size - bytes_remaining
+    video_bytes_remaining = bytes_remaining
+    percentage = int((bytes_downloaded / total_size) * 100)
+
+    video_progress_bar.set(percentage / 100)
+    app.update()
+
+
+def audio_progress_function(stream, chunk, bytes_remaining):
+    global audio_bytes_remaining
+    total_size = stream.filesize
+    bytes_downloaded = total_size - bytes_remaining
+    audio_bytes_remaining = bytes_remaining
+    percentage = int((bytes_downloaded / total_size) * 100)
+
+    audio_progress_bar.set(percentage / 100)
+    app.update()
+
 
 def get_streams(var_name, index, value_if_allowed):
     try:
@@ -102,7 +142,7 @@ def download_video():
         global download_quality
         global video_url
 
-        url_label.configure(text="Please wait your video is being downloaded")
+        url_label.configure(text="Please wait, your video is being downloaded")
         app.update()
 
         if download_quality and video_url:
@@ -110,21 +150,22 @@ def download_video():
             button.destroy()
             url_entry.delete(0, "end")
             app.update()
-            print(video_url)
 
-            yt = YouTube(video_url)
-            title=yt.title
-            # using replace() to
-            # remove bad_chars
-            for i in bad_chars:
-                title = title.replace(i, '')
+            yt_video = YouTube(video_url, on_progress_callback=video_progress_function)  # Separate object for video
+            yt_audio = YouTube(video_url, on_progress_callback=audio_progress_function)  # Separate object for audio
 
-            audio_stream = yt.streams.filter(progressive=False, file_extension="webm", adaptive=True, only_audio=True)[
-                0]
+            title = yt_video.title
+            for char in bad_chars:
+                title = title.replace(char, '')
+
+            # Explicitly get the video stream from yt_video
+            video_stream = yt_video.streams.get_by_itag(download_quality.itag)
+
+            audio_stream = yt_audio.streams.filter(progressive=False, file_extension="webm", adaptive=True, only_audio=True)[0]
 
             status_label.configure(text="Downloading video...", text_color="#0ce889", height=22)
             app.update()
-            video_file = download_quality.download(output_path=save_path, filename=f"video-{title}.webm", )
+            video_file = video_stream.download(output_path=save_path, filename=f"video-{title}.webm")
 
             status_label.configure(text="Downloading audio...", text_color="#0ce889", height=22)
             app.update()
@@ -132,10 +173,9 @@ def download_video():
 
             merge_audio_video(title=title, audio_file=audio_file, video_file=video_file)
         else:
-            status_label.configure(text="Please enter a valid url.", text_color="#ed0909", height=22)
+            status_label.configure(text="Please enter a valid URL.", text_color="#ed0909", height=22)
             app.update()
     except Exception as e:
-
         status_label.configure(text=f"Error: {e}", text_color="#ed0909", height=22)
         app.update()
 
@@ -195,11 +235,22 @@ url_entry.focus()
 status_label = CTkLabel(app, text=status)
 status_label.place(relx=0.5, rely=0.3, anchor="center")
 
+
 frame = CTkFrame(app, width=400, height=150, )
 frame.place(relx=0.5, rely=0.55, anchor="center", )
 
-button = CTkButton(app, text="Download Video", command=download_video, corner_radius=25, image=img)
-button.place(relx=0.5, rely=.85, anchor="center")  #grid(row=7, column=2, padx=20, pady=10, )
+# Video Progress Bar
+video_progress_bar = CTkProgressBar(frame, width=200, height=25, corner_radius=30, progress_color="green")
+video_progress_bar.pack()
+video_progress_bar.set(0.0)
+
+# Audio Progress Bar
+audio_progress_bar = CTkProgressBar(frame, width=200, height=25, corner_radius=30, progress_color="blue")
+audio_progress_bar.pack(pady=10)
+audio_progress_bar.set(0.0)
+
+button = CTkButton(frame, text="Download Video", command=download_video, corner_radius=25, image=img)
+button.pack()  #grid(row=7, column=2, padx=20, pady=10, )
 
 youtube_url.trace("w", get_streams)
 
