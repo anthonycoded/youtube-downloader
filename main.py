@@ -1,6 +1,3 @@
-from os import truncate
-from tokenize import String
-
 from pytube import Stream
 from pytubefix import YouTube, StreamQuery
 from customtkinter import *
@@ -24,6 +21,9 @@ available_streams = []
 radio_buttons = []  # List to hold all the radio buttons
 video_url = ""
 
+#bad_chars_list to sanitize video title/filename
+bad_chars = [';', ':', '!', "*", "?", "."]
+
 
 def select_quality(selected):
     global download_quality
@@ -33,25 +33,27 @@ def reset():
     global available_streams
     global frame
     global radio_buttons
+
     available_streams.clear()
+
     # Remove existing radio buttons from the frame
     for radio in radio_buttons:
         radio.destroy()
 
     radio_buttons.clear()  # Clear the list of radio buttons
-    #button.place(relx=0.5, rely=.85, anchor="center")
     app.update()
-
 
 def get_streams(var_name, index, value_if_allowed):
     try:
         reset()
-        global  available_streams
+        global available_streams
         global video_url
+        global url_label
 
         # Get video streams for user to choose from
         yt = YouTube(youtube_url.get())
         video_url = youtube_url.get()
+
         video_streams = yt.streams.filter(
             progressive=False,
             file_extension="webm",
@@ -59,21 +61,20 @@ def get_streams(var_name, index, value_if_allowed):
             only_video=True
         )
 
-
         #list streams in UI
         for stream in video_streams[:4]:
-            print(stream.resolution)
+          #  print(stream.resolution)
             available_streams.append(stream)
             radio = CTkRadioButton(
                 frame,
                 text=f"{stream.resolution}/{stream.fps}fps",
-                value=stream.itag,
-                command=select_quality(stream),
+                value=stream,
+                command=lambda s=stream: select_quality(s),
                 radiobutton_width=20,
                 width=400,
                 radiobutton_height=20,
                 corner_radius=150,
-                border_width_unchecked = 2,
+                border_width_unchecked=2,
                 border_width_checked=2,
                 border_color="blue",
                 hover_color="green",
@@ -98,27 +99,38 @@ def get_streams(var_name, index, value_if_allowed):
 def download_video():
     try:
         global status
-        global  download_quality
+        global download_quality
         global video_url
+
+        url_label.configure(text="Please wait your video is being downloaded")
+        app.update()
 
         if download_quality and video_url:
             status_label.configure(text="Initializing Download", text_color="#0ce889", height=22)
             button.destroy()
             url_entry.delete(0, "end")
             app.update()
+            print(video_url)
 
             yt = YouTube(video_url)
-            audio_stream = yt.streams.filter(progressive=False, file_extension="webm", adaptive=True, only_audio=True)[0]
+            title=yt.title
+            # using replace() to
+            # remove bad_chars
+            for i in bad_chars:
+                title = title.replace(i, '')
+
+            audio_stream = yt.streams.filter(progressive=False, file_extension="webm", adaptive=True, only_audio=True)[
+                0]
 
             status_label.configure(text="Downloading video...", text_color="#0ce889", height=22)
             app.update()
-            video_file = download_quality.download(output_path=save_path, filename=f"video-{yt.title}webm", )
+            video_file = download_quality.download(output_path=save_path, filename=f"video-{title}.webm", )
 
             status_label.configure(text="Downloading audio...", text_color="#0ce889", height=22)
             app.update()
-            audio_file = audio_stream.download(output_path=save_path, filename=f"audio-{yt.title}webm")
+            audio_file = audio_stream.download(output_path=save_path, filename=f"audio-{title}.webm")
 
-            merge_audio_video(title=yt.title, audio_file=audio_file, video_file=video_file)
+            merge_audio_video(title=title, audio_file=audio_file, video_file=video_file)
         else:
             status_label.configure(text="Please enter a valid url.", text_color="#ed0909", height=22)
             app.update()
@@ -126,6 +138,7 @@ def download_video():
 
         status_label.configure(text=f"Error: {e}", text_color="#ed0909", height=22)
         app.update()
+
 
 def merge_audio_video(audio_file, video_file, title):
     global button
@@ -144,19 +157,21 @@ def merge_audio_video(audio_file, video_file, title):
             format="mp4"
         ).run()
 
-        print("Finishing up...")
+        print("Cleaning up...")
 
         if result:
             os.remove(audio_file)
             os.remove(video_file)
-            status_label.configure(text=f"Video downloaded successfully {title}", text_color="#0ce889", height=22, width=200,)
+            status_label.configure(text=f"Video downloaded successfully {title}", text_color="#0ce889", height=22,
+                                   width=200, )
             button = CTkButton(app, text="Download Video", command=download_video, corner_radius=25, image=img)
             button.place(relx=0.5, rely=0.5, anchor="center")
+            url_label.configure(text="Please enter a youtube video url.")
             app.update()
+            print("Download completed. Status: Ready")
 
 
         else:
-
             status_label.configure(text="Something went wrong", text_color="#e80c1e", height=22)
             app.update()
 
@@ -180,11 +195,11 @@ url_entry.focus()
 status_label = CTkLabel(app, text=status)
 status_label.place(relx=0.5, rely=0.3, anchor="center")
 
-frame = CTkFrame(app, width=400, height=150,)
+frame = CTkFrame(app, width=400, height=150, )
 frame.place(relx=0.5, rely=0.55, anchor="center", )
 
 button = CTkButton(app, text="Download Video", command=download_video, corner_radius=25, image=img)
-button.place(relx=0.5, rely=.85, anchor="center")#grid(row=7, column=2, padx=20, pady=10, )
+button.place(relx=0.5, rely=.85, anchor="center")  #grid(row=7, column=2, padx=20, pady=10, )
 
 youtube_url.trace("w", get_streams)
 
