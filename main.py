@@ -7,7 +7,7 @@ import os
 
 from pytubefix.cli import on_progress
 
-save_path = "C:/Users/barbe/videos"
+save_path = ""
 test_url = "https://www.youtube.com/watch?v=VTB0_SBltDw"
 
 app = CTk()
